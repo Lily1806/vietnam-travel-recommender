@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vietnam Travel Recommender</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <span class="logo">🗺️</span>
+      <div>
+        <h1>Vietnam Travel Recommender</h1>
+        <p>Hệ thống gợi ý du lịch thông minh (KNN + RAG)</p>
+      </div>
+      <div id="status-badge" class="badge badge-loading">Đang kết nối…</div>
+    </div>
+  </header>
+
+  <!-- Tab Navigation -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="similar">🏛️ Gợi ý địa điểm tương tự</button>
+    <button class="tab-btn" data-tab="user">🎯 Gợi ý cá nhân</button>
+    <button class="tab-btn" data-tab="chat">💬 Tư vấn du lịch</button>
+  </nav>
+
+  <main>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         TAB 1 — Gợi ý tương tự (Item-based KNN)
+    ════════════════════════════════════════════════════════════════ -->
+    <section id="tab-similar" class="tab-panel active">
+      <div class="panel-header">
+        <h2>Gợi ý địa điểm tương tự</h2>
+        <p>Chọn một địa điểm bạn yêu thích, hệ thống sẽ tìm những nơi tương tự dựa trên đặc điểm địa lý, thể loại và đánh giá.</p>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="dest-select">Địa điểm tham chiếu</label>
+          <select id="dest-select">
+            <option value="">— Đang tải danh sách… —</option>
+          </select>
+        </div>
+        <div class="form-group form-group--sm">
+          <label for="similar-k">Số gợi ý (K)</label>
+          <input type="number" id="similar-k" value="5" min="1" max="20" />
+        </div>
+        <div class="form-group form-group--btn">
+          <button id="btn-similar" class="btn btn-primary" onclick="getSimilar()">Gợi ý ▸</button>
+        </div>
+      </div>
+
+      <div id="similar-result" class="result-area hidden"></div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         TAB 2 — Gợi ý cá nhân (User-based KNN)
+    ════════════════════════════════════════════════════════════════ -->
+    <section id="tab-user" class="tab-panel">
+      <div class="panel-header">
+        <h2>Gợi ý theo sở thích cá nhân</h2>
+        <p>Nhập các địa điểm bạn đã từng ghé và cho điểm đánh giá. Hệ thống sẽ xây dựng profile của bạn và gợi ý những nơi phù hợp.</p>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="user-dest-select">Thêm địa điểm đã ghé</label>
+          <select id="user-dest-select">
+            <option value="">— Chọn địa điểm —</option>
+          </select>
+        </div>
+        <div class="form-group form-group--sm">
+          <label for="user-rating">Điểm đánh giá</label>
+          <input type="number" id="user-rating" value="4.0" min="1" max="5" step="0.5" />
+        </div>
+        <div class="form-group form-group--btn">
+          <button class="btn btn-secondary" onclick="addRating()">+ Thêm</button>
+        </div>
+      </div>
+
+      <!-- Danh sách ratings đã thêm -->
+      <div id="ratings-list" class="ratings-list hidden">
+        <div class="ratings-list-header">
+          <strong>Địa điểm đã chọn:</strong>
+          <button class="btn-link" onclick="clearRatings()">Xóa tất cả</button>
+        </div>
+        <div id="ratings-items"></div>
+      </div>
+
+      <div class="form-row form-row--actions">
+        <div class="form-group form-group--sm">
+          <label for="user-k">Số gợi ý (K)</label>
+          <input type="number" id="user-k" value="5" min="1" max="20" />
+        </div>
+        <div class="form-group form-group--btn">
+          <button id="btn-user" class="btn btn-primary" onclick="getUserRecs()">Gợi ý ▸</button>
+        </div>
+      </div>
+
+      <div id="user-result" class="result-area hidden"></div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         TAB 3 — RAG Chat Advisor
+    ════════════════════════════════════════════════════════════════ -->
+    <section id="tab-chat" class="tab-panel">
+      <div class="panel-header">
+        <h2>Tư vấn du lịch</h2>
+        <p>Đặt câu hỏi bất kỳ về du lịch Việt Nam. Hệ thống sẽ tìm kiếm tài liệu liên quan và trả lời dựa trên knowledge base.</p>
+      </div>
+
+      <div class="chat-container">
+        <div id="chat-messages" class="chat-messages">
+          <!-- Tin nhắn chào -->
+          <div class="message message--bot">
+            <div class="message-bubble">
+              👋 Xin chào! Tôi là trợ lý tư vấn du lịch Việt Nam.<br/>
+              Hãy hỏi tôi bất cứ điều gì về địa điểm, ẩm thực, phương tiện, lịch trình du lịch nhé!<br/><br/>
+              <em>Ví dụ: "Hà Nội có những địa điểm nào đẹp?" hoặc "Đặc sản ẩm thực Hội An là gì?"</em>
+            </div>
+          </div>
+        </div>
+
+        <form class="chat-input-row" onsubmit="sendChat(event)">
+          <input
+            type="text"
+            id="chat-input"
+            placeholder="Nhập câu hỏi về du lịch Việt Nam…"
+            autocomplete="off"
+          />
+          <button type="submit" class="btn btn-primary" id="btn-chat">Gửi ▸</button>
+        </form>
+
+        <div class="chat-suggestions">
+          <span>Gợi ý:</span>
+          <button class="chip" onclick="fillChat('Hà Nội có những địa điểm nào đẹp?')">Hà Nội đẹp</button>
+          <button class="chip" onclick="fillChat('Du lịch Phú Quốc nên đi đâu?')">Phú Quốc</button>
+          <button class="chip" onclick="fillChat('Ẩm thực Hội An đặc sắc gì?')">Ẩm thực Hội An</button>
+          <button class="chip" onclick="fillChat('Thời điểm nào nên đi Đà Lạt?')">Đà Lạt khi nào</button>
+          <button class="chip" onclick="fillChat('Chi phí du lịch Sa Pa khoảng bao nhiêu?')">Chi phí Sa Pa</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Vietnam Travel Recommender · KNN + RAG · Dữ liệu: vietnam_tourism_v2</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

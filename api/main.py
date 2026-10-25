@@ -3,9 +3,12 @@ FastAPI Application - REST API cho hệ thống gợi ý du lịch.
 """
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from api.dependencies import build_knn_recommender, build_rag_components, build_travel_advisor
 from api.routers import advise, recommend
@@ -88,3 +91,15 @@ async def health_check():
             "llm_advisor": "ready" if app.state.advisor is not None else "fallback (no API key)",
         },
     }
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    """Redirect root đến giao diện web demo."""
+    return RedirectResponse(url="/ui/index.html")
+
+
+# Serve static UI files (phải mount CUỐI CÙNG để không xung đột với API routes)
+_ui_dir = Path(__file__).resolve().parents[1] / "app"
+if _ui_dir.exists():
+    app.mount("/ui", StaticFiles(directory=str(_ui_dir), html=True), name="ui")
