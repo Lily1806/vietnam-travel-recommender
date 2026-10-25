@@ -1,0 +1,19 @@
+# Cấu hình KNN
+knn:
+  k: 10
+  metric: cosine          # cosine | euclidean | manhattan
+  algorithm: brute        # brute | ball_tree | kd_tree | auto
+  n_jobs: -1
+
+# Cấu hình RAG
+rag:
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  llm_provider: openai    # openai | gemini
+  llm_model: gpt-4o-mini
+  chunk_size: 512
+  chunk_overlap: 64
+  top_k_retrieval: 5
+  vector_db: faiss
+
+# Logging
+log_level: INFO
