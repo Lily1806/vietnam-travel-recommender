@@ -19,10 +19,10 @@ ENV/
 .env
 config/config.yaml
 
-# Data (không commit dữ liệu lớn)
-data/raw/*.csv
-data/processed/
+# Data (không commit dữ liệu lớn - chỉ bỏ qua file JSON gốc và embeddings)
+data/raw/*.json
 data/embeddings/
+# Cho phép commit file CSV nhỏ và kết quả đã xử lý (destinations.csv, reviews.csv, rag_eval_qa.json)
 
 # Notebooks checkpoints
 .ipynb_checkpoints/
