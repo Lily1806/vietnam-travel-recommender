@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 
 from api.dependencies import get_advisor, get_retriever
 from api.schemas import AdviseRequest, AdviseResponse
-from src.recommendation.advisor import TravelAdvisor
+from src.recommendation.advisor import TravelAdvisor, generate_smart_answer
 from src.retrieval.retriever import DocumentRetriever
 
 router = APIRouter()
@@ -14,25 +14,10 @@ router = APIRouter()
 
 def _fallback_answer(question: str, retriever: DocumentRetriever, top_k: int) -> AdviseResponse:
     """
-    Fallback khi không có LLM: trả về trực tiếp các đoạn tài liệu liên quan
-    thay vì câu trả lời được tổng hợp.
+    Tư vấn thông minh dựa trên trích xuất khi chưa có LLM.
     """
     results = retriever.retrieve(question, top_k=top_k)
-    if not results:
-        answer = (
-            "Xin lỗi, tôi không tìm thấy thông tin liên quan đến câu hỏi của bạn "
-            "trong cơ sở dữ liệu hiện tại."
-        )
-    else:
-        # Ghép các đoạn tài liệu liên quan nhất thành câu trả lời
-        parts = [
-            f"**[Nguồn: {r.source}]**\n{r.content[:600]}"
-            for r in results[:3]
-        ]
-        answer = (
-            "📚 *Chế độ fallback (không có LLM API key) - Trích dẫn từ knowledge base:*\n\n"
-            + "\n\n---\n\n".join(parts)
-        )
+    answer = generate_smart_answer(question, results)
 
     return AdviseResponse(
         question=question,
@@ -40,6 +25,7 @@ def _fallback_answer(question: str, retriever: DocumentRetriever, top_k: int) ->
         sources=list({r.source for r in results}),
         retrieved_docs=[{"source": r.source, "score": round(r.score, 4)} for r in results],
     )
+
 
 
 @router.post(

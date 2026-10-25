@@ -257,9 +257,15 @@ function appendMessage(role, text, sources = []) {
     .replace(/\*(.*?)\*/g, "<em>$1</em>")
     .replace(/\n/g, "<br/>");
 
+  const cleanSrc = s => {
+    let n = s.replace(".txt", "").replace(/_/g, " ");
+    if (n.startsWith("a ")) n = "Đà " + n.slice(2);
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  };
   const sourcesHTML = sources.length > 0
-    ? `<div class="chat-sources"><span>📚 Nguồn:</span> ${sources.map(s => s.replace(".txt","")).join(", ")}</div>`
+    ? `<div class="chat-sources"><span>📚 Cẩm nang:</span> ${sources.map(cleanSrc).join(" · ")}</div>`
     : "";
+
 
   div.innerHTML = `<div class="message-bubble">${formatted}${sourcesHTML}</div>`;
   container.appendChild(div);

@@ -51,28 +51,29 @@ def build_rag_components(config: AppConfig):
     return embedder, store, retriever
 
 
-def build_travel_advisor(retriever: DocumentRetriever, config: AppConfig) -> TravelAdvisor | None:
+def build_travel_advisor(retriever: DocumentRetriever, config: AppConfig) -> TravelAdvisor:
     """
-    Khởi tạo TravelAdvisor nếu có API key.
-    Trả về None nếu không có API key (sẽ dùng fallback mode).
+    Khởi tạo TravelAdvisor.
+    Nếu có LLM API key, hệ thống sẽ gọi LLM.
+    Nếu chưa có API key, hệ thống tự động sử dụng thuật toán Smart Extractive Synthesis.
     """
     has_openai = bool(config.rag.openai_api_key)
     has_gemini = bool(config.rag.gemini_api_key)
 
     if not has_openai and not has_gemini:
-        logger.warning(
-            "⚠️  Không tìm thấy OPENAI_API_KEY hoặc GEMINI_API_KEY. "
-            "RAG advisor sẽ chạy ở chế độ fallback (chỉ trả về trích đoạn tài liệu)."
+        logger.info(
+            "ℹ️  Chưa cấu hình LLM API key. "
+            "RAG advisor hoạt động ở chế độ Trích lọc thông minh (Smart Extractive)."
         )
-        return None
 
     try:
         advisor = TravelAdvisor(retriever, config.rag)
-        logger.info("✅ TravelAdvisor sẵn sàng. Provider: %s", config.rag.llm_provider)
+        logger.info("✅ TravelAdvisor sẵn sàng.")
         return advisor
     except Exception as e:
-        logger.error("❌ Không thể khởi tạo TravelAdvisor: %s. Dùng fallback mode.", e)
-        return None
+        logger.error("❌ Lỗi khởi tạo TravelAdvisor: %s", e)
+        return TravelAdvisor(retriever, config.rag)
+
 
 
 # ──────────────── FastAPI Dependency Getters ────────────────────────────────
